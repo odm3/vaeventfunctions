@@ -1,16 +1,30 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
+import { DefaultAzureCredential } from "@azure/identity";
+import { ENVIRONMENT } from "../environment";
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     context.log('HTTP trigger function processed a request.');
-    const name = (req.query.name || (req.body && req.body.name));
-    const responseMessage = name
-        ? "Hello, " + name + ". This HTTP triggered function executed successfully."
-        : "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.";
-
-    context.res = {
-        // status: 200, /* Defaults to 200 */
-        body: responseMessage
-    };
+    const volunteer = (req.body && req.body.volunteer);
+    context.log(volunteer);
+    const { DB_ENDPOINT, DB_NAME, DB_CONTAINER_NAME} = ENVIRONMENT;
+    const credential = new DefaultAzureCredential();
+    const dbClient = new CosmosClient({
+        endpoint: DB_ENDPOINT,
+        aadCredentials: credential
+    });
+    try {
+        const { database } = await dbClient.databases.createIfNotExists({id: DB_NAME});
+        const { container } = await database.containers.createIfNotExists({ id: DB_CONTAINER_NAME});
+        const itemRes = await container.items.upsert(volunteer);
+        context.res.json({
+            status: itemRes.statusCode
+        })
+    } catch(error) {
+        context.log(`DB Operation error occurred. The reason is ${error}`);
+        context.res.json({
+            status: error
+        })
+    }
 
 };
 

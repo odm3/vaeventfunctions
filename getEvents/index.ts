@@ -13,16 +13,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return fetch(`${REURL}/${id}/events?per_page=${_CONSTANTS_.PAGE_LIMIT}`, { headers });
      });
      const result = await ( await Promise.all(fetchArrays).then( async (responses) => {
-         const jsonRes = await Promise.all(responses.map((response) => { return response.json() as any}))
+         const jsonRes = await Promise.all(responses.map((response) => { return response.json()}))
          return jsonRes;
      }));
 
      const [{ data: retData1}, { data: retData2}] = result;
-
-     return context.res.json({
-             data: result[0].concat(result[1])
-         }
-     );
+     context.res.json({
+        data: retData1.concat(retData2)
+     })
 };
 
 export default httpTrigger;
