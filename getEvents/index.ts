@@ -1,6 +1,6 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { _CONSTANTS_ } from "../Constants";
-import fetch from "node-fetch";
+import axios from "axios";
 import { DefaultAzureCredential } from "@azure/identity";
 import { SecretClient } from "@azure/keyvault-secrets";
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -13,18 +13,33 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const headers = {
         'Authorization': `Bearer ${secret.value}`
      };
-     const fetchArrays = _CONSTANTS_.SEASON_IDS.map((id) => {
-        return fetch(`${REURL}/${id}/events?per_page=${_CONSTANTS_.PAGE_LIMIT}`, { headers });
-     });
-     const result = await ( await Promise.all(fetchArrays).then( async (responses) => {
-         const jsonRes = await Promise.all(responses.map((response) => { return response.json()}))
-         return jsonRes;
-     }));
-
-     const [{ data: retData1}, { data: retData2}] = result;
+     let events = [];
+     const vrcEvents = await getRobotEvents(REURL, _CONSTANTS_.SEASON_IDS[0], 1, headers);
+     const viqcEvents = await getRobotEvents(REURL, _CONSTANTS_.SEASON_IDS[1], 1, headers);
      context.res.json({
-        data: retData1.concat(retData2)
+        data: vrcEvents.concat(viqcEvents)
      })
 };
 
+const getRobotEvents = async (url: string, id: number, page: number = 1, headers: any) => {
+   const returnData = [];
+   const query = `${url}/${id}/events?page=${page}`;
+   const response = await axios.get(query, { headers });
+   const data = response.data;
+   returnData.push(data.data);
+   const endPage = data.meta?.last_page;
+   const promiseQueries = [];
+   for(let currPage = page + 1; page <= endPage; page++) {
+      promiseQueries.push(axios.get(`${url}/${id}/events?page=${currPage}`, {headers}));
+   }
+   await Promise.all(promiseQueries).then((values) => {
+      values.forEach((value) => {
+         returnData.concat(value.data.data);
+      });
+   }).catch((error) => {
+      console.log(`Error: ${error}`);
+      throw error;
+   });
+   return returnData;
+}
 export default httpTrigger;

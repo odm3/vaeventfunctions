@@ -14,6 +14,8 @@
     "@azure/identity": "^2.0.5",
     "@azure/keyvault-secrets": "^4.4.0",
     "@azure/logger": "^1.0.3",
+    "@types/axios": "^0.14.0",
+    "axios": "^0.27.2",
     "node-fetch": "^2.6.7"
   },
   "devDependencies": {
