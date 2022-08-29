@@ -5,7 +5,6 @@ import { ENVIRONMENT } from "../environment";
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     context.log('HTTP trigger function processed a request.');
     const volunteer = (req.body && req.body.volunteer);
-    context.log(volunteer);
     const { DB_ENDPOINT, DB_NAME, DB_CONTAINER_NAME} = ENVIRONMENT;
     const credential = new DefaultAzureCredential();
     const dbClient = new CosmosClient({

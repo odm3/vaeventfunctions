@@ -11,6 +11,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
    const secret = await client.getSecret(_CONSTANTS_.SECRET_NAME);
    const whitelisted_skus: string[] = JSON.parse(process.env["WHITELISTED_EVENT_SKUS"]);
    const REURL = _CONSTANTS_.ROBOTEVENTSURL || "";
+   const championships_visible = (req.query.champsEnabled || process.env["CHAMPS_ENABLED"]) ?? false;
    const headers = {
       'Authorization': `Bearer ${secret.value}`
    };
@@ -23,7 +24,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
          return whitelisted_skus.some((sku) => {
             return sku === event?.sku;
          })
+      }).filter((event) => {
+         if (!championships_visible) {
+            return event?.level !== "Regional"
+         }
+         return false;
       })
+
    })
 };
 
